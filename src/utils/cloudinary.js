@@ -1,5 +1,6 @@
 import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
+import path from "path";
 
 // Configuration
 cloudinary.config({
@@ -10,16 +11,26 @@ cloudinary.config({
 
 const uploadOnCloudinary = async (localFilePath) => {
   try {
-    if (!localFilePath) return null;
-    //Upload the file on cloudinary
-    const response = await cloudinary.uploader.upload(localFilePath, {
+    if (!localFilePath) {
+      console.error("❌ No file path provided to uploadOnCloudinary");
+      return null;
+    }
+
+    const absolutePath = path.resolve(localFilePath);
+
+    const response = await cloudinary.uploader.upload(absolutePath, {
       resource_type: "auto",
     });
-    //File has been uploaded successfully
-    console.log("File has been uploaded on cloudinary", response.url);
+
+    // console.log("✅ File uploaded to Cloudinary:", response.url);
+    fs.unlinkSync(localFilePath);
     return response;
   } catch (error) {
-    fs.unlinkSync(localFilePath); //remove the locally saved temPerary file as the upload operation got failed
+    console.error("❌ Cloudinary upload error:", error.message);
+    if (fs.existsSync(localFilePath)) {
+      fs.unlinkSync(localFilePath);
+      console.log("🧹 Deleted local file after failed upload.");
+    }
     return null;
   }
 };
